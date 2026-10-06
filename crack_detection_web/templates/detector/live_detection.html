@@ -1,0 +1,1147 @@
+{% csrf_token %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Live Crack Detection</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+
+            background: linear-gradient(
+                135deg,
+                #eef2f7,
+                #dce6f1
+            );
+
+            min-height: 100vh;
+            color: #1f2937;
+        }
+
+        .container {
+            width: 92%;
+            max-width: 1100px;
+            margin: 40px auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #172554;
+            font-size: 38px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #64748b;
+            font-size: 18px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 18px;
+            padding: 30px;
+
+            box-shadow:
+                0 10px 30px
+                rgba(0, 0, 0, 0.10);
+
+            margin-bottom: 25px;
+        }
+
+        .camera-container {
+            text-align: center;
+        }
+
+        video {
+            width: 100%;
+            max-width: 800px;
+
+            border-radius: 15px;
+
+            background: #111827;
+
+            box-shadow:
+                0 5px 20px
+                rgba(0, 0, 0, 0.20);
+        }
+
+        canvas {
+            display: none;
+        }
+
+        .buttons {
+            text-align: center;
+            margin-top: 25px;
+        }
+
+        button {
+            border: none;
+            border-radius: 8px;
+
+            padding: 13px 25px;
+            margin: 5px;
+
+            font-size: 16px;
+            font-weight: bold;
+
+            cursor: pointer;
+        }
+
+        #startBtn {
+            background: #2563eb;
+            color: white;
+        }
+
+        #stopBtn {
+            background: #dc2626;
+            color: white;
+        }
+
+        #reportBtn {
+            background: #16a34a;
+            color: white;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .result {
+            text-align: center;
+            margin-top: 25px;
+
+            padding: 25px;
+
+            border-radius: 15px;
+
+            background: #f8fafc;
+        }
+
+        #prediction {
+            font-size: 34px;
+            font-weight: bold;
+            margin: 15px;
+        }
+
+        #confidence {
+            font-size: 20px;
+            color: #475569;
+        }
+
+        .stats {
+            display: grid;
+
+            grid-template-columns:
+                repeat(3, 1fr);
+
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .stat {
+            background: #f8fafc;
+
+            border-radius: 12px;
+
+            padding: 20px;
+
+            text-align: center;
+        }
+
+        .stat h3 {
+            margin: 0 0 10px;
+            color: #64748b;
+        }
+
+        .stat p {
+            font-size: 28px;
+            font-weight: bold;
+
+            margin: 0;
+
+            color: #1e3a8a;
+        }
+
+        .status {
+            text-align: center;
+            margin-top: 15px;
+            color: #64748b;
+            min-height: 25px;
+        }
+
+        .error {
+            color: #dc2626;
+            font-weight: bold;
+        }
+
+        .success {
+            color: #16a34a;
+            font-weight: bold;
+        }
+
+        .report-link {
+            color: #2563eb;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        @media (max-width: 700px) {
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 30px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+    <!-- ===================================================== -->
+    <!-- HEADER -->
+    <!-- ===================================================== -->
+
+    <div class="header">
+
+        <h1>
+            Live Surface Crack Detection
+        </h1>
+
+        <p>
+            Real-Time CNN-Based Industrial Surface Inspection
+        </p>
+
+    </div>
+
+
+    <!-- ===================================================== -->
+    <!-- CAMERA -->
+    <!-- ===================================================== -->
+
+    <div class="card">
+
+        <div class="camera-container">
+
+            <video
+                id="video"
+                autoplay
+                playsinline>
+            </video>
+
+            <canvas id="canvas"></canvas>
+
+        </div>
+
+
+        <div class="buttons">
+
+            <button
+                id="startBtn"
+                onclick="startCamera()">
+
+                Start Camera
+
+            </button>
+
+
+            <button
+                id="stopBtn"
+                onclick="stopDetection()"
+                disabled>
+
+                Stop Detection
+
+            </button>
+
+
+            <button
+                id="reportBtn"
+                onclick="generateReport()"
+                disabled>
+
+                Generate Report
+
+            </button>
+
+        </div>
+
+
+        <div
+            class="status"
+            id="status">
+
+            Camera is not started.
+
+        </div>
+
+    </div>
+
+
+    <!-- ===================================================== -->
+    <!-- RESULT -->
+    <!-- ===================================================== -->
+
+    <div class="card">
+
+        <div class="result">
+
+            <h2>
+                Current Detection
+            </h2>
+
+            <div id="prediction">
+                Waiting...
+            </div>
+
+            <div id="confidence">
+                Confidence: -
+            </div>
+
+        </div>
+
+
+        <!-- ================================================= -->
+        <!-- STATISTICS -->
+        <!-- ================================================= -->
+
+        <div class="stats">
+
+            <div class="stat">
+
+                <h3>
+                    Total Detections
+                </h3>
+
+                <p id="total">
+                    0
+                </p>
+
+            </div>
+
+
+            <div class="stat">
+
+                <h3>
+                    Cracks Detected
+                </h3>
+
+                <p id="cracks">
+                    0
+                </p>
+
+            </div>
+
+
+            <div class="stat">
+
+                <h3>
+                    No Crack
+                </h3>
+
+                <p id="noCracks">
+                    0
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+</div>
+
+
+<script>
+
+
+    // ========================================================
+    // DOM ELEMENTS
+    // ========================================================
+
+    const video =
+        document.getElementById("video");
+
+    const canvas =
+        document.getElementById("canvas");
+
+    const predictionElement =
+        document.getElementById("prediction");
+
+    const confidenceElement =
+        document.getElementById("confidence");
+
+    const statusElement =
+        document.getElementById("status");
+
+    const startButton =
+        document.getElementById("startBtn");
+
+    const stopButton =
+        document.getElementById("stopBtn");
+
+    const reportButton =
+        document.getElementById("reportBtn");
+
+
+    // ========================================================
+    // VARIABLES
+    // ========================================================
+
+    let stream = null;
+
+    let detectionInterval = null;
+
+    let sessionId = null;
+
+    let requestInProgress = false;
+
+    let totalDetections = 0;
+
+    let crackCount = 0;
+
+    let noCrackCount = 0;
+
+
+    // ========================================================
+    // CSRF TOKEN
+    // ========================================================
+
+    const csrfToken =
+        document.querySelector(
+            "[name=csrfmiddlewaretoken]"
+        ).value;
+
+
+    // ========================================================
+    // START CAMERA
+    // ========================================================
+
+    async function startCamera() {
+
+        try {
+
+            // ------------------------------------------------
+            // Request webcam permission
+            // ------------------------------------------------
+
+            stream =
+                await navigator.mediaDevices.getUserMedia({
+
+                    video: true,
+
+                    audio: false
+
+                });
+
+
+            video.srcObject = stream;
+
+
+            // ------------------------------------------------
+            // Create new detection session
+            // ------------------------------------------------
+
+            sessionId =
+                "session_" +
+                new Date()
+                    .toISOString()
+                    .replace(
+                        /[-:.TZ]/g,
+                        ""
+                    );
+
+
+            // ------------------------------------------------
+            // Reset counters
+            // ------------------------------------------------
+
+            totalDetections = 0;
+
+            crackCount = 0;
+
+            noCrackCount = 0;
+
+            requestInProgress = false;
+
+
+            updateStatistics();
+
+
+            // ------------------------------------------------
+            // Reset UI
+            // ------------------------------------------------
+
+            predictionElement.innerText =
+                "Waiting...";
+
+            predictionElement.style.color =
+                "#1f2937";
+
+            confidenceElement.innerText =
+                "Confidence: -";
+
+
+            // ------------------------------------------------
+            // Buttons
+            // ------------------------------------------------
+
+            startButton.disabled = true;
+
+            stopButton.disabled = false;
+
+            reportButton.disabled = true;
+
+
+            statusElement.innerText =
+                "Camera started. Live detection is running.";
+
+            statusElement.className =
+                "status";
+
+
+            // ------------------------------------------------
+            // Wait until video has dimensions
+            // ------------------------------------------------
+
+            await new Promise(
+                resolve => {
+
+                    if (
+                        video.readyState >= 2 &&
+                        video.videoWidth > 0
+                    ) {
+
+                        resolve();
+
+                    } else {
+
+                        video.onloadedmetadata =
+                            () => resolve();
+
+                    }
+
+                }
+            );
+
+
+            // ------------------------------------------------
+            // Capture frame every 1.5 seconds
+            // ------------------------------------------------
+
+            detectionInterval =
+                setInterval(
+                    captureFrame,
+                    1500
+                );
+
+
+            // ------------------------------------------------
+            // Immediately capture first frame
+            // ------------------------------------------------
+
+            captureFrame();
+
+        }
+
+
+        catch (error) {
+
+            console.error(
+                "Camera error:",
+                error
+            );
+
+            statusElement.innerText =
+                "Unable to access camera: "
+                + error.message;
+
+            statusElement.className =
+                "status error";
+
+        }
+
+    }
+
+
+    // ========================================================
+    // CAPTURE FRAME
+    // ========================================================
+
+    async function captureFrame() {
+
+        // ----------------------------------------------------
+        // Camera check
+        // ----------------------------------------------------
+
+        if (!stream) {
+            return;
+        }
+
+
+        // ----------------------------------------------------
+        // Prevent overlapping requests
+        // ----------------------------------------------------
+
+        if (requestInProgress) {
+
+            console.log(
+                "Previous detection is still running..."
+            );
+
+            return;
+
+        }
+
+
+        // ----------------------------------------------------
+        // Video check
+        // ----------------------------------------------------
+
+        if (
+            video.videoWidth === 0 ||
+            video.videoHeight === 0
+        ) {
+
+            console.log(
+                "Video is not ready yet."
+            );
+
+            return;
+
+        }
+
+
+        requestInProgress = true;
+
+
+        // ----------------------------------------------------
+        // Canvas size
+        // ----------------------------------------------------
+
+        canvas.width =
+            video.videoWidth;
+
+        canvas.height =
+            video.videoHeight;
+
+
+        const context =
+            canvas.getContext("2d");
+
+
+        // ----------------------------------------------------
+        // Copy webcam frame to canvas
+        // ----------------------------------------------------
+
+        context.drawImage(
+            video,
+            0,
+            0,
+            canvas.width,
+            canvas.height
+        );
+
+
+        // ----------------------------------------------------
+        // Convert frame to JPEG
+        // ----------------------------------------------------
+
+        canvas.toBlob(
+
+            async function(blob) {
+
+                if (!blob) {
+
+                    requestInProgress = false;
+
+                    return;
+
+                }
+
+
+                const formData =
+                    new FormData();
+
+
+                formData.append(
+                    "image",
+                    blob,
+                    "live_frame.jpg"
+                );
+
+
+                formData.append(
+                    "session_id",
+                    sessionId
+                );
+
+
+                try {
+
+                    statusElement.innerText =
+                        "Analyzing frame...";
+
+                    statusElement.className =
+                        "status";
+
+
+                    // ----------------------------------------
+                    // Send frame to Django
+                    // ----------------------------------------
+
+                    const response =
+                        await fetch(
+                            "/live-detect/",
+                            {
+
+                                method: "POST",
+
+                                headers: {
+
+                                    "X-CSRFToken":
+                                        csrfToken
+
+                                },
+
+                                body: formData
+
+                            }
+                        );
+
+
+                    // ----------------------------------------
+                    // Check HTTP response
+                    // ----------------------------------------
+
+                    if (!response.ok) {
+
+                        const errorText =
+                            await response.text();
+
+                        console.error(
+                            "Server response:",
+                            errorText
+                        );
+
+                        throw new Error(
+                            "Server returned HTTP "
+                            + response.status
+                        );
+
+                    }
+
+
+                    const data =
+                        await response.json();
+
+
+                    // ----------------------------------------
+                    // Prediction successful
+                    // ----------------------------------------
+
+                    if (data.success) {
+
+                        displayPrediction(
+                            data
+                        );
+
+                        statusElement.innerText =
+                            "Live detection is running.";
+
+                        statusElement.className =
+                            "status success";
+
+                    }
+
+
+                    // ----------------------------------------
+                    // Django returned an error
+                    // ----------------------------------------
+
+                    else {
+
+                        console.error(
+                            "Detection failed:",
+                            data.error
+                        );
+
+                        statusElement.innerText =
+                            "Detection failed: "
+                            + data.error;
+
+                        statusElement.className =
+                            "status error";
+
+                    }
+
+                }
+
+
+                catch (error) {
+
+                    console.error(
+                        "Detection error:",
+                        error
+                    );
+
+                    statusElement.innerText =
+                        "Detection request failed: "
+                        + error.message;
+
+                    statusElement.className =
+                        "status error";
+
+                }
+
+
+                finally {
+
+                    requestInProgress = false;
+
+                }
+
+            },
+
+            "image/jpeg",
+
+            0.85
+
+        );
+
+    }
+
+
+    // ========================================================
+    // DISPLAY PREDICTION
+    // ========================================================
+
+    function displayPrediction(data) {
+
+        predictionElement.innerText =
+            data.result;
+
+
+        confidenceElement.innerText =
+            "Confidence: "
+            + data.confidence
+            + "%";
+
+
+        if (
+            data.result ===
+            "Crack Detected"
+        ) {
+
+            predictionElement.style.color =
+                "#dc2626";
+
+            crackCount++;
+
+        }
+
+
+        else {
+
+            predictionElement.style.color =
+                "#16a34a";
+
+            noCrackCount++;
+
+        }
+
+
+        totalDetections++;
+
+
+        updateStatistics();
+
+    }
+
+
+    // ========================================================
+    // UPDATE STATISTICS
+    // ========================================================
+
+    function updateStatistics() {
+
+        document.getElementById("total")
+            .innerText =
+            totalDetections;
+
+
+        document.getElementById("cracks")
+            .innerText =
+            crackCount;
+
+
+        document.getElementById("noCracks")
+            .innerText =
+            noCrackCount;
+
+    }
+
+
+    // ========================================================
+    // STOP DETECTION
+    // ========================================================
+
+    function stopDetection() {
+
+        // ----------------------------------------------------
+        // Stop detection interval
+        // ----------------------------------------------------
+
+        if (detectionInterval) {
+
+            clearInterval(
+                detectionInterval
+            );
+
+            detectionInterval = null;
+
+        }
+
+
+        // ----------------------------------------------------
+        // Stop webcam
+        // ----------------------------------------------------
+
+        if (stream) {
+
+            stream
+                .getTracks()
+                .forEach(
+                    track =>
+                    track.stop()
+                );
+
+            stream = null;
+
+        }
+
+
+        // ----------------------------------------------------
+        // Update buttons
+        // ----------------------------------------------------
+
+        startButton.disabled = false;
+
+        stopButton.disabled = true;
+
+
+        // ----------------------------------------------------
+        // Enable report ONLY if detections exist
+        // ----------------------------------------------------
+
+        reportButton.disabled =
+            totalDetections === 0;
+
+
+        // ----------------------------------------------------
+        // Status
+        // ----------------------------------------------------
+
+        if (totalDetections > 0) {
+
+            statusElement.innerText =
+                "Detection stopped. "
+                + totalDetections
+                + " detection(s) recorded. "
+                + "You can now generate the report.";
+
+            statusElement.className =
+                "status success";
+
+        }
+
+        else {
+
+            statusElement.innerText =
+                "Detection stopped, but no detections were recorded.";
+
+            statusElement.className =
+                "status error";
+
+        }
+
+    }
+
+
+    // ========================================================
+    // GENERATE REPORT
+    // ========================================================
+
+    async function generateReport() {
+
+        // ----------------------------------------------------
+        // Check detections
+        // ----------------------------------------------------
+
+        if (
+            !sessionId ||
+            totalDetections === 0
+        ) {
+
+            statusElement.innerText =
+                "No detection records available. "
+                + "Start the camera and run detection first.";
+
+            statusElement.className =
+                "status error";
+
+            return;
+
+        }
+
+
+        const formData =
+            new FormData();
+
+
+        formData.append(
+            "session_id",
+            sessionId
+        );
+
+
+        try {
+
+            statusElement.innerText =
+                "Generating report...";
+
+            statusElement.className =
+                "status";
+
+
+            const response =
+                await fetch(
+                    "/generate-report/",
+                    {
+
+                        method: "POST",
+
+                        headers: {
+
+                            "X-CSRFToken":
+                                csrfToken
+
+                        },
+
+                        body: formData
+
+                    }
+                );
+
+
+            if (!response.ok) {
+
+                const errorText =
+                    await response.text();
+
+                console.error(
+                    "Report server response:",
+                    errorText
+                );
+
+                throw new Error(
+                    "Server returned HTTP "
+                    + response.status
+                );
+
+            }
+
+
+            const data =
+                await response.json();
+
+
+            if (data.success) {
+
+                statusElement.innerHTML =
+                    "Report generated successfully. "
+                    +
+                    "<a "
+                    + "class='report-link' "
+                    + "href='"
+                    + data.report_url
+                    + "' "
+                    + "target='_blank'>"
+                    + "Open Report"
+                    + "</a>";
+
+                statusElement.className =
+                    "status success";
+
+            }
+
+
+            else {
+
+                statusElement.innerText =
+                    "Report generation failed: "
+                    + data.error;
+
+                statusElement.className =
+                    "status error";
+
+            }
+
+        }
+
+
+        catch (error) {
+
+            console.error(
+                "Report error:",
+                error
+            );
+
+            statusElement.innerText =
+                "Report generation failed: "
+                + error.message;
+
+            statusElement.className =
+                "status error";
+
+        }
+
+    }
+
+
+</script>
+
+
+</body>
+
+</html>

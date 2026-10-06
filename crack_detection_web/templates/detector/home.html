@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>
+        Industrial Surface Crack Detection
+    </title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+
+            margin: 0;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #eef2f7,
+                    #dce6f1
+                );
+
+            min-height: 100vh;
+
+            color: #1f2937;
+        }
+
+
+        .container {
+
+            width: 90%;
+
+            max-width: 1000px;
+
+            margin: 50px auto;
+        }
+
+
+        .header {
+
+            text-align: center;
+
+            margin-bottom: 30px;
+        }
+
+
+        .header h1 {
+
+            font-size: 38px;
+
+            margin-bottom: 10px;
+
+            color: #172554;
+        }
+
+
+        .header p {
+
+            font-size: 18px;
+
+            color: #64748b;
+        }
+
+
+        .card {
+
+            background: white;
+
+            border-radius: 18px;
+
+            padding: 35px;
+
+            box-shadow:
+                0 10px 30px
+                rgba(0, 0, 0, 0.10);
+
+            margin-bottom: 25px;
+        }
+
+
+        .card h2 {
+
+            margin-top: 0;
+
+            color: #1e3a8a;
+        }
+
+
+        .upload-area {
+
+            border: 2px dashed #94a3b8;
+
+            border-radius: 15px;
+
+            padding: 35px;
+
+            text-align: center;
+
+            background: #f8fafc;
+
+            margin-top: 20px;
+        }
+
+
+        .upload-area input[type="file"] {
+
+            margin: 20px 0;
+
+            font-size: 16px;
+        }
+
+
+        .analyze-btn {
+
+            display: inline-block;
+
+            padding: 13px 30px;
+
+            border: none;
+
+            border-radius: 8px;
+
+            background: #2563eb;
+
+            color: white;
+
+            font-size: 16px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+        }
+
+
+        .analyze-btn:hover {
+
+            background: #1d4ed8;
+        }
+
+
+        .result {
+
+            text-align: center;
+
+            margin-top: 30px;
+
+            padding: 30px;
+
+            border-radius: 15px;
+
+            background: #f8fafc;
+        }
+
+
+        .result h2 {
+
+            margin-bottom: 10px;
+
+            color: #334155;
+        }
+
+
+        .prediction {
+
+            font-size: 32px;
+
+            font-weight: bold;
+
+            margin: 15px 0;
+        }
+
+
+        .confidence {
+
+            font-size: 20px;
+
+            color: #475569;
+        }
+
+
+        .uploaded-image {
+
+            display: block;
+
+            max-width: 500px;
+
+            max-height: 400px;
+
+            width: auto;
+
+            height: auto;
+
+            margin: 25px auto 0;
+
+            border-radius: 12px;
+
+            box-shadow:
+                0 5px 20px
+                rgba(0, 0, 0, 0.15);
+        }
+
+
+        .error {
+
+            margin-top: 20px;
+
+            padding: 15px;
+
+            border-radius: 8px;
+
+            background: #fee2e2;
+
+            color: #991b1b;
+
+            text-align: center;
+
+            font-weight: bold;
+        }
+
+
+        .info {
+
+            margin-top: 25px;
+
+            text-align: center;
+
+            color: #64748b;
+
+            font-size: 14px;
+        }
+
+
+        .footer {
+
+            text-align: center;
+
+            color: #64748b;
+
+            font-size: 14px;
+
+            margin-top: 25px;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+    <!-- ================================================= -->
+    <!-- HEADER -->
+    <!-- ================================================= -->
+
+    <div class="header">
+
+        <h1>
+            Industrial Surface Crack Detection
+        </h1>
+
+        <p>
+            AI-Based Surface Crack Detection System
+        </p>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- UPLOAD CARD -->
+    <!-- ================================================= -->
+
+    <div class="card">
+
+        <h2>
+            Upload Surface Image
+        </h2>
+
+        <p>
+            Upload an image of an industrial surface.
+            Our trained CNN model will analyze the image
+            and detect whether a surface crack is present.
+        </p>
+
+
+        <form
+            method="POST"
+            enctype="multipart/form-data"
+        >
+
+            {% csrf_token %}
+
+
+            <div class="upload-area">
+
+                <p>
+                    Select a JPG, JPEG, PNG or BMP image
+                </p>
+
+
+                <input
+                    type="file"
+                    name="image"
+                    accept=".jpg,.jpeg,.png,.bmp"
+                    required
+                >
+
+
+                <br><br>
+
+
+                <button
+                    type="submit"
+                    class="analyze-btn"
+                >
+                    Analyze Image
+                </button>
+
+            </div>
+
+        </form>
+
+
+        <div class="info">
+
+            Maximum file size: 10 MB
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- ERROR -->
+    <!-- ================================================= -->
+
+    {% if error %}
+
+        <div class="error">
+
+            {{ error }}
+
+        </div>
+
+    {% endif %}
+
+
+    <!-- ================================================= -->
+    <!-- RESULT -->
+    <!-- ================================================= -->
+
+    {% if result %}
+
+        <div class="card result">
+
+            <h2>
+                Analysis Result
+            </h2>
+
+
+            {% if result == "Crack Detected" %}
+
+                <div
+                    class="prediction"
+                    style="color: #dc2626;"
+                >
+
+                    ⚠️ {{ result }}
+
+                </div>
+
+            {% else %}
+
+                <div
+                    class="prediction"
+                    style="color: #16a34a;"
+                >
+
+                    ✓ {{ result }}
+
+                </div>
+
+            {% endif %}
+
+
+            <div class="confidence">
+
+                Confidence:
+                <strong>
+                    {{ confidence }}%
+                </strong>
+
+            </div>
+
+
+            {% if image_url %}
+
+                <img
+                    src="{{ image_url }}"
+                    alt="Uploaded Surface Image"
+                    class="uploaded-image"
+                >
+
+            {% endif %}
+
+        </div>
+
+    {% endif %}
+
+
+    <!-- ================================================= -->
+    <!-- FOOTER -->
+    <!-- ================================================= -->
+
+    <div class="footer">
+
+        Powered by CNN-based Deep Learning
+
+    </div>
+
+
+</div>
+
+
+</body>
+
+</html>

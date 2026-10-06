@@ -1,0 +1,20 @@
+# Virtual Environment
+MarvellousCNN/
+
+# Datasets
+CrackDataset/
+Processed_CrackDataset/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Django
+db.sqlite3
+media/
+
+# IDE
+.vscode/
+
+# Generated reports
+reports/live_detection/*
